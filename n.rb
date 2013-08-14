@@ -32,7 +32,7 @@ if ARGV[0] == "predict_up" && forward_connections.size < 2 && forward_connection
 elsif ARGV[0] == "predict_up" && forward_connections.size <= 1 && forward_connections.first.size < 1
 	Dir.glob("#{home_dir}/c.rb") do |p|
 		begin
-		  PTY.spawn( "ruby #{p} #{number}" ) do |stdout, stdin, pid| #arguments?
+		  PTY.spawn( "ruby #{p} 1" ) do |stdout, stdin, pid| #arguments?
 		    begin
 		    	stdout.each { |line| puts line }
 		    rescue Errno::EIO
@@ -131,10 +131,22 @@ elsif ARGV[0] == "input"
 		File.open("#{location}/>.txt", 'w+') { |f| f.write("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}\n") }
 		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/<.txt", 'w+') { |f| f.write("#{global_ram}\n") }
 		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/<.txt", 'w+') { |f| f.write("#{location}\n") }
-		#File.open("#{home_dir}/ram.txt", 'w') { |f| f.write() }
+		File.open("#{home_dir}/ram.txt", 'w') { |f| f.write(location) }
+		Dir.glob("#{home_dir}/c.rb") do |p|
+		begin
+		  PTY.spawn( "ruby #{p} 1" ) do |stdout, stdin, pid| #arguments?
+		    begin
+		    	stdout.each { |line| puts line }
+		    rescue Errno::EIO
+		    end
+		  end
+		rescue PTY::ChildExited
+		  puts "The child process exited!"
+		end
+		end
 	end
 else
-
+	puts "else"
 end #BIG if
 
 #if only one forward connection, go there, repeat until multiple predictions or no more predictions

@@ -117,21 +117,8 @@ elsif ARGV[0] == "input"
 		end
 	end
 	if already_created == 0 #new sequence, learn it
-		num = 0 
-	 	Dir.glob("#{home_dir}/#{next_sequence_size.to_s}/*").select do |f| 
-	 		File.directory?(f)
-	 		num = num + 1
-	 	end
-		Dir.mkdir("#{home_dir}/#{next_sequence_size.to_s}") unless Dir.exists?("#{home_dir}/#{next_sequence_size.to_s}")
-		Dir.mkdir("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}")
-		s = File.open("#{location}/n.rb", 'r') { |f| f.read }
-		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/n.rb", 'w') { |f| f.write(s) }
-		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/>.txt", 'w') { |f| f.write("") }
-		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/<.txt", 'w') { |f| f.write("") }
-		File.open("#{location}/>.txt", 'w+') { |f| f.write("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}\n") }
-		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/<.txt", 'w+') { |f| f.write("#{global_ram}\n") }
-		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/<.txt", 'w+') { |f| f.write("#{location}\n") }
-		#File.open("#{home_dir}/ram.txt", 'w') { |f| f.write() }
+		puts "already created = 0"
+		
 	end
 else
 

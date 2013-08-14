@@ -68,15 +68,16 @@ else
 	input = File.open('#{location}/c.txt', 'r') { |f| f.read }
 	substring = input[pos..(pos + feed - 1)]
 	curr_char = input[0].to_s
-	if !Dir.exists?("#{location}/#{size}/#{curr_char}")
-		Dir.mkdir("#{location}/#{size}")
-		Dir.mkdir("#{location}/#{size}/#{curr_char}")
-		s = File.open("#{location}/n.rb", 'r') { |f| f.read }
-		File.open("#{location}/#{size}/#{curr_char}/n.rb", 'w') { |f| f.write(s) }
-	end
+#	if !Dir.exists?("#{location}/#{size}/#{curr_char}")
+#		Dir.mkdir("#{location}/#{size}")
+#		Dir.mkdir("#{location}/#{size}/#{curr_char}")
+#		s = File.open("#{location}/n.rb", 'r') { |f| f.read }
+#		File.open("#{location}/#{size}/#{curr_char}/n.rb", 'w') { |f| f.write(s) }
+#	end
+
 	Dir.glob("#{location}/#{size}/#{curr_char}/n.rb") do |p|
 		begin
-		  PTY.spawn( "ruby #{p} upwards" ) do |stdout, stdin, pid|
+		  PTY.spawn( "ruby #{p} input" ) do |stdout, stdin, pid|
 		    begin
 		    	stdout.each { |line| puts line }
 		    rescue Errno::EIO
@@ -87,5 +88,3 @@ else
 		end
 	end
 end
-
-
