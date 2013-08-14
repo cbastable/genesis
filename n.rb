@@ -1,11 +1,12 @@
 require 'pty'
 require 'pathname'
+home_dir = Dir.pwd
 location = "#{File.dirname(__FILE__)}"
-number = location.partition('/').last.to_i
+location = location.gsub("#{home_dir}", ".")
+number = location.partition('/').last.partition('/').first.to_i
 next_num = number + 1
 current = location.partition('/').last.partition('/').last.to_i
 parent = File.expand_path("..",File.dirname(__FILE__))
-home_dir = Dir.pwd
 local_fname = "#{location}/n.txt"
 
 forward_connections = []
@@ -28,8 +29,9 @@ if ARGV[0] == "predict_up" && forward_connections.size < 2 && forward_connection
 		  puts "The child process exited!"
 		end
 	end
-#no predictions?
-elsif ARGV[0] == "predict_up" && forward_connections.size <= 1 && forward_connections.first.size < 1
+elsif ARGV[0] == "new"
+	puts "Reading next input, currently at: #{location}"
+	File.open("#{home_dir}/ram.txt", 'w') { |f| f.write(location) }
 	Dir.glob("#{home_dir}/c.rb") do |p|
 		begin
 		  PTY.spawn( "ruby #{p} 1" ) do |stdout, stdin, pid| #arguments?
@@ -41,39 +43,7 @@ elsif ARGV[0] == "predict_up" && forward_connections.size <= 1 && forward_connec
 		rescue PTY::ChildExited
 		  puts "The child process exited!"
 		end
-	end
-#elsif [multiple predictions] stop and match what it predicts vs. the actual next inputs
-elsif ARGV[0] == "predict_up" && forward_connections.size >= 2
-	input_size = global_ram.partition('/').last.to_i
-	prediction_index = backward_connections.index("#{global_ram}") + 1
-	prediction = backward_connections[prediction_index]
-	Dir.glob("#{home_dir}/#{prediction}") do |p|
-		begin
-		  PTY.spawn( "ruby #{p} predict_down" ) do |stdout, stdin, pid|
-		    begin
-		    	stdout.each { |line| puts line }
-		    rescue Errno::EIO
-		    end
-		  end
-		rescue PTY::ChildExited
-		  puts "The child process exited!"
-		end
-	end
-elsif ARGV[0] == "predict_down" #predict this to happen, read next number of inputs to verify
-	#CHANGE THIS -- SHOULD NOT GET NEXT NUMBER HERE, get it in event-fire location instead plz
-	File.open("#{home_dir}/ram.txt", 'w') { |f| f.write("#{location}.to_s") }
-	Dir.glob("#{home_dir}/c.rb") do |p|
-	begin
-	  PTY.spawn( "ruby #{p} #{number}" ) do |stdout, stdin, pid| #arguments?
-	    begin
-	    	stdout.each { |line| puts line }
-	    rescue Errno::EIO
-	    end
-	  end
-	rescue PTY::ChildExited
-	  puts "The child process exited!"
-	end
-	end
+	end	
 elsif ARGV[0] == "input"
 	sequence_size = (global_ram.partition('/').last.partition('/').first.to_i)
 	next_sequence_size = sequence_size + number
@@ -81,24 +51,30 @@ elsif ARGV[0] == "input"
 	already_created = 0
 	#neurons this one is connected to:
 	hash = Hash.new
+	puts "a"
 	forward_connections.each do |connection|
+		puts "b"
 		links = []
 		connection_size = connection.partition('/').last.partition('/').first.to_i
-		if connection_size == next_sequence_size
-			File.open("#{home_dir}/#{connection}/<.txt", 'r').each_line { |line| links << line}
-		end
+		File.open("#{home_dir}/#{connection.gsub("\n", "")}/<.txt", 'r').each_line { |line| links << line}
 		hash['connection'] = links
 	end
+	puts "c"
 	indices_hash = Hash.new
 	hash.each do |connection, backlinks|
+		puts "d"
 		#link_index = value.index(location)
 		#index_hash = { "#{key}" => link_index }
 		indices = backlinks.each_index.select{ |i| backlinks[i] == location }
 		indices_hash["#{connection}"] = indices
 	end
+	puts "e"
 	indices_hash.each do |connection, indices|
+		puts "f"
 		possiblities = hash[connection]
+		puts "Possibilities: #{possiblities}"
 		indices.each do |index|
+			puts "g"
 			if possiblities[(index - 1)] == global_ram #already learned this, go fire it
 				already_created = 1
 				Dir.glob("#{home_dir}/#{connection}") do |p|
@@ -116,25 +92,40 @@ elsif ARGV[0] == "input"
 			end # if possibilities
 		end
 	end
-	if already_created == 0 #new sequence, learn it
-		num = 0 
+	puts "h"
+	if already_created == 0 && location != global_ram #new sequence, learn it
+		num = 0
 	 	Dir.glob("#{home_dir}/#{next_sequence_size.to_s}/*").select do |f| 
 	 		File.directory?(f)
 	 		num = num + 1
 	 	end
+	 	puts "location: #{location}"
 		Dir.mkdir("#{home_dir}/#{next_sequence_size.to_s}") unless Dir.exists?("#{home_dir}/#{next_sequence_size.to_s}")
 		Dir.mkdir("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}")
 		s = File.open("#{location}/n.rb", 'r') { |f| f.read }
 		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/n.rb", 'w') { |f| f.write(s) }
 		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/>.txt", 'w') { |f| f.write("") }
 		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/<.txt", 'w') { |f| f.write("") }
-		File.open("#{location}/>.txt", 'w+') { |f| f.write("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}\n") }
-		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/<.txt", 'w+') { |f| f.write("#{global_ram}\n") }
-		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/<.txt", 'w+') { |f| f.write("#{location}\n") }
-		File.open("#{home_dir}/ram.txt", 'w') { |f| f.write(location) }
-		Dir.glob("#{home_dir}/c.rb") do |p|
+		File.open("#{home_dir}/#{global_ram}/>.txt", 'a+') { |f| f.write("#{next_sequence_size.to_s}/#{num.to_s}\n") }
+		File.open("#{home_dir}/#{location}/>.txt", 'a+') { |f| f.write("#{next_sequence_size.to_s}/#{num.to_s}\n") }
+		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/<.txt", 'a+') { |f| f.write("#{global_ram}\n") }
+		File.open("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/<.txt", 'a+') { |f| f.write("#{location}\n") }
+		Dir.glob("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}/n.rb") do |p|
+			begin
+			  PTY.spawn( "ruby #{p} new" ) do |stdout, stdin, pid|
+			    begin
+			    	stdout.each { |line| puts line }
+			    rescue Errno::EIO
+			    end
+			  end
+			rescue PTY::ChildExited
+			  puts "The child process exited!"
+			end
+		end
+	else
+		Dir.glob("#{location}/n.rb") do |p|
 		begin
-		  PTY.spawn( "ruby #{p} 1" ) do |stdout, stdin, pid| #arguments?
+		  PTY.spawn( "ruby #{p} new" ) do |stdout, stdin, pid| #arguments?
 		    begin
 		    	stdout.each { |line| puts line }
 		    rescue Errno::EIO
@@ -143,8 +134,8 @@ elsif ARGV[0] == "input"
 		rescue PTY::ChildExited
 		  puts "The child process exited!"
 		end
-		end
-	end
+		end	
+	end #if already created
 else
 	puts "else"
 end #BIG if

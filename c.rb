@@ -11,7 +11,7 @@ if feed == "external"
 	#make a directory for curr_char if doesn't exist...
 	if curr_char == 0.to_s
 		if !Dir.exists?("#{location}/#{size}/0")
-			Dir.mkdir("#{location}/#{size}")
+			Dir.mkdir("#{location}/#{size}") unless Dir.exists?("#{location}/#{size}")
 			Dir.mkdir("#{location}/#{size}/0")
 			s = File.open("#{location}/n.rb", 'r') { |f| f.read }
 			File.open("#{location}/#{size}/0/n.rb", 'w') { |f| f.write(s) }
@@ -37,7 +37,7 @@ if feed == "external"
 		end
 	else
 		if !Dir.exists?("#{location}/#{size}/1")
-			Dir.mkdir("#{location}/#{size}")
+			Dir.mkdir("#{location}/#{size}") unless Dir.exists?("#{location}/#{size}")
 			Dir.mkdir("#{location}/#{size}/1")
 			s = File.open("#{location}/n.rb", 'r') { |f| f.read }
 			File.open("#{location}/#{size}/1/n.rb", 'w') { |f| f.write(s) }
@@ -61,30 +61,43 @@ if feed == "external"
 			  puts "The child process exited!"
 			end
 		end
-	end	
+	end	#if curr_char == 0
 else
 	#need smart way to find out where in the input I currently am/was reading from
-	pos = File.open('#{location}/pos.txt', 'r') { |f| f.read }
-	input = File.open('#{location}/c.txt', 'r') { |f| f.read }
-	substring = input[pos..(pos + feed - 1)]
-	curr_char = input[0].to_s
-#	if !Dir.exists?("#{location}/#{size}/#{curr_char}")
-#		Dir.mkdir("#{location}/#{size}")
-#		Dir.mkdir("#{location}/#{size}/#{curr_char}")
-#		s = File.open("#{location}/n.rb", 'r') { |f| f.read }
-#		File.open("#{location}/#{size}/#{curr_char}/n.rb", 'w') { |f| f.write(s) }
-#	end
-
-	Dir.glob("#{location}/#{size}/#{curr_char}/n.rb") do |p|
-		begin
-		  PTY.spawn( "ruby #{p} input" ) do |stdout, stdin, pid|
-		    begin
-		    	stdout.each { |line| puts line }
-		    rescue Errno::EIO
-		    end
-		  end
-		rescue PTY::ChildExited
-		  puts "The child process exited!"
-		end
+	pos = File.open("#{location}/pos.txt", 'r') { |f| f.read }
+	input = File.open("#{location}/c.txt", 'r') { |f| f.read }
+	curr_char = input[pos.to_i].to_s
+	substring = input[pos.to_i..(pos.to_i + (feed.to_i - 1))]
+	puts "sub: #{substring}"
+	if !Dir.exists?("#{location}/#{size}/1")
+			Dir.mkdir("#{location}/#{size}") unless Dir.exists?("#{location}/#{size}")
+			Dir.mkdir("#{location}/#{size}/1")
+			s = File.open("#{location}/n.rb", 'r') { |f| f.read }
+			File.open("#{location}/#{size}/1/n.rb", 'w') { |f| f.write(s) }
+			File.open("#{location}/#{size}/1/>.txt", 'w') { |f| f.write("") }
+			File.open("#{location}/#{size}/1/<.txt", 'w') { |f| f.write("") }
 	end
+	if substring.length == 1
+		new_pos = pos.to_i + 1
+		File.open("#{location}/pos.txt", 'w') { |f| f.write(new_pos) }
+		Dir.glob("#{location}/#{size}/#{substring}/n.rb") do |p|
+			begin
+			  PTY.spawn( "ruby #{p} input" ) do |stdout, stdin, pid|
+			    begin
+			    	stdout.each { |line| puts line }
+			    rescue Errno::EIO
+			    end
+			  end
+			rescue PTY::ChildExited
+			  puts "The child process exited!"
+			end
+		end
+	else
+		puts "big string"
+		
+	end
+
+
+
+
 end
