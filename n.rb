@@ -50,29 +50,34 @@ elsif ARGV[0] == "input"
 	next_sequence_size = 1 if next_sequence_size == 0
 	already_created = 0
 	#neurons this one is connected to:
-	hash = Hash.new
+	#hash = Hash.new
+	hash = Hash.new{|h, k| h[k] = []}
 	puts "a"
 	forward_connections.each do |connection|
-		puts "b"
 		links = []
-		connection_size = connection.partition('/').last.partition('/').first.to_i
+		connection_size = connection.partition('/').first.to_i
+		puts "b, connection: #{connection}, size: #{connection_size}"
 		File.open("#{home_dir}/#{connection.gsub("\n", "")}/<.txt", 'r').each_line { |line| links << line}
-		hash['connection'] = links
+		#hash[:connection] = "#{links}"
+		#hash = { :connection => links }
+		hash[connection] << links
 	end
-	puts "c"
+	puts "c, forward_connections: #{forward_connections.count}, hash size: #{hash.length}"
 	indices_hash = Hash.new
 	hash.each do |connection, backlinks|
 		puts "d"
 		#link_index = value.index(location)
 		#index_hash = { "#{key}" => link_index }
-		indices = backlinks.each_index.select{ |i| backlinks[i] == location }
-		indices_hash["#{connection}"] = indices
+		#indices = backlinks.each_index.select{ |i| backlinks[i] == location }
+		#indices_hash["#{connection}"] = indices
 	end
 	puts "e"
 	indices_hash.each do |connection, indices|
 		puts "f"
 		possiblities = hash[connection]
 		puts "Possibilities: #{possiblities}"
+		puts "Connections: #{connection}"
+		puts "Indices: #{indices}"
 		indices.each do |index|
 			puts "g"
 			if possiblities[(index - 1)] == global_ram #already learned this, go fire it
