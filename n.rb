@@ -49,62 +49,49 @@ elsif ARGV[0] == "input"
 	next_sequence_size = sequence_size + number
 	next_sequence_size = 1 if next_sequence_size == 0
 	already_created = 0
-	#neurons this one is connected to:
-	#hash = Hash.new
+	existing_cell = ""
 	hash = Hash.new{|h, k| h[k] = []}
-	puts "a"
+	puts "Location: #{location}, forward connections: #{forward_connections}"
 	forward_connections.each do |connection|
 		links = []
 		connection_size = connection.partition('/').first.to_i
-		puts "b, connection: #{connection}, size: #{connection_size}"
 		File.open("#{home_dir}/#{connection.gsub("\n", "")}/<.txt", 'r').each_line { |line| links << line}
-		#hash[:connection] = "#{links}"
-		#hash = { :connection => links }
 		hash[connection] << links
 	end
-	puts "c, forward_connections: #{forward_connections.count}, hash size: #{hash.length}"
-	indices_hash = Hash.new
-	hash.each do |connection, backlinks|
-		puts "d"
-		#link_index = value.index(location)
-		#index_hash = { "#{key}" => link_index }
-		#indices = backlinks.each_index.select{ |i| backlinks[i] == location }
-		#indices_hash["#{connection}"] = indices
-	end
-	puts "e"
-	indices_hash.each do |connection, indices|
-		puts "f"
-		possiblities = hash[connection]
-		puts "Possibilities: #{possiblities}"
-		puts "Connections: #{connection}"
-		puts "Indices: #{indices}"
-		indices.each do |index|
-			puts "g"
-			if possiblities[(index - 1)] == global_ram #already learned this, go fire it
-				already_created = 1
-				Dir.glob("#{home_dir}/#{connection}") do |p|
-					begin
-					  PTY.spawn( "ruby #{p} input" ) do |stdout, stdin, pid|
-					    begin
-					    	stdout.each { |line| puts line }
-					    rescue Errno::EIO
-					    end
-					  end
-					rescue PTY::ChildExited
-					  puts "The child process exited!"
-					end
-				end #dir.glob
-			end # if possibilities
-		end
-	end
-	puts "h"
+	puts "Location: #{location}, Hash: #{hash}"
+
+	catch (:break) do
+		hash.each do |connection, indices|
+			indices.each do |index| #index is an array of possible targets, with newline chars at end
+				fixed_targets = []
+				index.each do |target| 
+					s = target.gsub("\n", "")
+					fixed_targets << s
+				end
+				puts "Fixed: #{fixed_targets}"
+				puts "RAM: #{global_ram}"
+				puts "Location: #{location}"
+				curr_seq_locator = fixed_targets.index(location)
+				ram_seq_locator = fixed_targets.index(global_ram)
+				puts "RAM LOCATOR: #{ram_seq_locator}"
+				puts "CURRENT LOCATOR: #{curr_seq_locator}"
+				if !ram_seq_locator.nil? && !curr_seq_locator.nil? && (curr_seq_locator - ram_seq_locator) == 1
+					puts "ALREADY LEARNED THIS! BREAK!"
+					already_created = 1
+					existing_cell = "#{home_dir}/#{connection.gsub("\n", "")}/n.rb"
+					puts "#{home_dir}/#{connection.gsub("\n", "")}/n.rb"
+					throw :break if already_created == 1
+				end
+			end #indices.each
+		end #hash.each
+	end ##catch
+
 	if already_created == 0 && location != global_ram #new sequence, learn it
 		num = 0
 	 	Dir.glob("#{home_dir}/#{next_sequence_size.to_s}/*").select do |f| 
 	 		File.directory?(f)
 	 		num = num + 1
 	 	end
-	 	puts "location: #{location}"
 		Dir.mkdir("#{home_dir}/#{next_sequence_size.to_s}") unless Dir.exists?("#{home_dir}/#{next_sequence_size.to_s}")
 		Dir.mkdir("#{home_dir}/#{next_sequence_size.to_s}/#{num.to_s}")
 		s = File.open("#{location}/n.rb", 'r') { |f| f.read }
@@ -127,7 +114,7 @@ elsif ARGV[0] == "input"
 			  puts "The child process exited!"
 			end
 		end
-	else
+	elsif already_created == 0 && location == global_ram
 		Dir.glob("#{location}/n.rb") do |p|
 		begin
 		  PTY.spawn( "ruby #{p} new" ) do |stdout, stdin, pid| #arguments?
@@ -140,6 +127,19 @@ elsif ARGV[0] == "input"
 		  puts "The child process exited!"
 		end
 		end	
+	else
+		Dir.glob(existing_cell) do |p|
+			begin
+			  PTY.spawn( "ruby #{p} new" ) do |stdout, stdin, pid|
+			    begin
+			    	stdout.each { |line| puts line }
+			    rescue Errno::EIO
+			    end
+			  end
+			rescue PTY::ChildExited
+			  puts "The child process exited!"
+			end
+		end #dir.glob
 	end #if already created
 else
 	puts "else"
